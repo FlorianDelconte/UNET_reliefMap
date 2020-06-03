@@ -1,0 +1,11 @@
+#################################################################################
+# 				train-valid_cut_All.sh				#
+#			To cut and fill deep-tree-directory			#
+#		with ratio 70% for training and 30% for valid			#
+#################################################################################
+
+Condition1 	: all image and groundtruth in same directory with a comon extension.
+Condition2 	: groundtruth file need to finish by "_GT"
+Condition3 	: Extract test relief map BEFORE call 
+Condition4	: ground truh need to be binary
+RUN : ./train-valid_cut_All.sh PathToData/ PathToOutputNameDirectory/
