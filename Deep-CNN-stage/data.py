@@ -1,4 +1,4 @@
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 import os
 import glob
@@ -6,7 +6,7 @@ import skimage.io as io
 import skimage.transform as trans
 import itertools
 import image
-
+from random_eraser import get_random_eraser  # added
 import model
 #rgb
 def trainset_generator(batch_size,
@@ -20,7 +20,7 @@ def trainset_generator(batch_size,
                        mask_save_prefix = "mask",
                        flag_multi_class = False,
                        num_class = 2,
-                       save_to_dir = "../repartition4/visu_augmented_data/",
+                       save_to_dir = "../crossValidationv3/data4_2nd/visu_augmented_data",
                        target_size = (model.height, model.width),
                        seed = 1):
     '''
@@ -81,33 +81,28 @@ def gen_train_npy(image_path,mask_path,flag_multi_class = False,num_class = 2,im
 #   Generate datas    #
 #=====================#
 
-'''train_dir = os.path.join(os.getcwd(), '..', 'DATA','PNG','train','mire','512_512')
+'''train_dir       = os.path.join(os.getcwd(), '..', 'crossValidationv3','testDA')
 input_folder    = 'input'
 label_folder    = 'output'
 save_dir        = 'visu_data_gen'
-aug_dir         = "".join([train_dir, '/', save_dir])
+aug_dir         = os.path.join(train_dir, save_dir)
 
 
 #transform param
-data_gen_args = dict(rescale = 1.0 / 511,
-                     rotation_range=0.5,
-                     width_shift_range=0.2,
-                     height_shift_range=0.2,
-                     shear_range=0.2,
-                     zoom_range=0.2,
-                     horizontal_flip=True,
-                     fill_mode='wrap')
-
-data_gen_args = dict(channel_shift_range=0.,
-                    rotation_range=0.2,
-                     width_shift_range=0.05,
-                     height_shift_range=0.05,
-                     shear_range=0.05,
-                     zoom_range=0.1,
-                     horizontal_flip=True,
-                     fill_mode='constant')
+data_gen_args = dict(brightness_range=[0.1,0.5],
+                    rescale = 1.0 / 255,
+                    rotation_range=20,
+                    width_shift_range=0.2,
+                    height_shift_range=0.2,
+                    shear_range=0.2,
+                    zoom_range=0.2,
+                    horizontal_flip=True,
+                    vertical_flip=True,
+                    fill_mode='reflect',
+                    preprocessing_function=get_random_eraser(p=0.5, s_l=0.02, s_h=0.4, r_1=0.3, r_2=1/0.3,
+                  v_l=0, v_h=0, pixel_level=False))
 #number of méta image you want to create.
-number_batch = 2
+number_batch = 10
 __generator = trainset_generator(number_batch, train_dir, input_folder, label_folder,
                                       data_gen_args, save_to_dir=aug_dir)
 
@@ -116,6 +111,3 @@ for i,batch in enumerate(__generator):
     print(i)
     if(i >= number_batch):
         break'''
-
-
-#image_arr, mask_arr = gen_train_npy(aug_dir, aug_dir)

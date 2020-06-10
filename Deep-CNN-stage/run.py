@@ -8,13 +8,13 @@ import skimage.transform as transform
 import numpy as np
 import matplotlib.image as img
 
-from keras.models import *
-from keras.layers import *
-from keras.optimizers import *
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
-from keras import backend as keras
-from keras.utils import to_categorical
-
+from tensorflow.keras import backend as keras
+from tensorflow.keras.utils import to_categorical
+from random_eraser import get_random_eraser  # added
 import model
 import data
 
@@ -26,8 +26,9 @@ batch_size = model.batch_size
 epochs = model.epochs
 
 # Folders Train, Valid, Test and Save
-train_dir 	= os.path.join(os.getcwd(), '..','repartition4', model.train_folder)
-valid_dir   = os.path.join(os.getcwd(), '..','repartition4', model.valid_folder)
+train_dir 	= os.path.join(os.getcwd(), '..','crossValidationv3','data4_2nd', model.train_folder)
+valid_dir   = os.path.join(os.getcwd(), '..','crossValidationv3','data4_2nd', model.valid_folder)
+
 
 
 input_folder    = 'input'
@@ -42,15 +43,18 @@ label_folder    = 'output'
                      fill_mode='nearest')'''
 
 data_gen_args = dict(rescale = 1.0 / 255,
-                     rotation_range=0.3,
-                     width_shift_range=0.1,
-                     height_shift_range=0.1,
-                     shear_range=0.05,
-                     zoom_range=0.1,
+                     rotation_range=20,
+                     width_shift_range=0.2,
+                     height_shift_range=0.2,
+                     zoom_range=0.15,
                      horizontal_flip=True,
-                     fill_mode='reflect')
+                     vertical_flip=True,
+                     fill_mode='reflect',
+                     preprocessing_function=get_random_eraser(p=0.5, s_l=0.02, s_h=0.4, r_1=0.3, r_2=1/0.3,
+                   v_l=0, v_h=0, pixel_level=False))
 
-
+#brightness_range=[0.1,1.],
+#shear_range=0.2,
 
 '''def loadDataset(directory, h=model.height, w=model.width, c=model.channels, n=model.numDatas):
     #datas = np.zeros((h, w, c, n))
@@ -89,7 +93,7 @@ data_gen_args = dict(rescale = 1.0 / 255,
         if '.DS_Store' in mylist: mylist.remove('.DS_Store')
 
         mylist = ["{}/{}".format(directory, file) for file in mylist]''
-
+data4_2nd
         # IF CSV
         #for (i, file) in enumerate(mylist):
         #    with open(file, 'r') as text:
@@ -105,10 +109,10 @@ data_gen_args = dict(rescale = 1.0 / 255,
 
 # Create network
 __generators    = data.trainset_generator(model.batch_size, train_dir, input_folder, label_folder,
-                                 data_gen_args, save_to_dir="../repartition4/visu_augmented_data/")
+                                 data_gen_args, save_to_dir=None)#"../crossValidationv3/data4_1st/visu_augmented_data"
 
 __validator     = data.trainset_generator(model.batch_size, valid_dir, input_folder, label_folder,
-                                          data_gen_args, save_to_dir="../repartition4/visu_augmented_data/")
+                                          data_gen_args, save_to_dir=None)#"../crossValidationv3/data4_1st/visu_augmented_data"
 
 model_checkpoint = ModelCheckpoint(model.fullname,
                                    monitor='val_loss',
@@ -120,12 +124,18 @@ try:
   net.load_weights(model.fullname)
 except IOError:
   pass
-net.fit_generator(__generators,
+'''net.fit_generator(__generators,
                   steps_per_epoch   = model.steps_per_epoch,
                   validation_data   = __validator,
                   validation_steps  = model.validation_steps,
                   epochs=model.epochs,
-                  callbacks=[model_checkpoint])
+                  callbacks=[model_checkpoint])'''
+net.fit(__generators,
+        steps_per_epoch   = model.steps_per_epoch,
+        validation_data   = __validator,
+        validation_steps  = model.validation_steps,
+        epochs=model.epochs,
+        callbacks=[model_checkpoint])
 
 #if not os.path.isdir(save_dir):
 #    os.makedirs(save_dir)
@@ -165,7 +175,7 @@ net.fit_generator(__generators,
 #
 #    x_train = np.reshape(x_train, [34, 512, 512, 1])
 #    x_test  = np.reshape(x_test, [15, 512, 512, 1])
-#
+#data5_5th
 #    y_train = np.reshape(y_train, [34, 512, 512, 1])
 ##y_train = to_categorical(y_train)
 ##   print y_train[1,:,:,1]
@@ -174,7 +184,7 @@ net.fit_generator(__generators,
 #    #y_test = to_categorical(y_test, num_classes=1)
 #
 #    print("Start training")
-#    net.fit(x_train, y_train,
+#    net.fit(x_train, y_train,data4_3rd
 #            verbose=1,
 #            batch_size=model.batch_size,
 #            epochs=1,

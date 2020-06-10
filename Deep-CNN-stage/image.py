@@ -16,8 +16,8 @@ import warnings
 import multiprocessing.pool
 from functools import partial
 
-from keras import backend as K
-from keras.utils.data_utils import Sequence
+from tensorflow.keras import backend as K
+from tensorflow.python.keras.utils.data_utils import Sequence
 
 try:
     from PIL import Image as pil_image
