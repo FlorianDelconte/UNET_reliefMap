@@ -11,7 +11,7 @@ import numpy as np
 #ratio for distribution in train dirs
 ratio=70
 #dimension of mini image
-patchdim=300
+patchdim=320
 #valid input path
 validInputPath="valid/input/"
 #valid output validInputPath
@@ -21,8 +21,8 @@ trainInputPath="train/input/"
 #train output path
 trainOutputPath="train/output/"
 def main(argv):
-    inputImage = ''
-    inputGT = ''
+    imgPath = ''
+    gtPath = ''
     outputDirectory = ''
     try:
         opts, args = getopt.getopt(argv,"hi:g:o:",["iImage=","IGT=","odir="])
@@ -34,48 +34,89 @@ def main(argv):
             print ('defect_detect.py -i <inputImage> -g <inputGT> -o <outputDirectory>')
             sys.exit()
         elif opt in ("-i", "--iImage"):
-            inputImage = arg
+            imgPath = arg
         elif opt in ("-g", "--IGT"):
-            inputGT = arg
+            gtPath = arg
         elif opt in ("-o", "--odir"):
             outputDirectory = arg
-    imageName=os.path.splitext(os.path.basename(inputImage))[0]
-    gtName=os.path.splitext(os.path.basename(inputGT))[0]
-    print ('Path to image is ', inputImage)
-    print ('Path to groundTruth is ', inputGT)
+
+    print ('Path to image is ', imgPath)
+    print ('Path to groundTruth is ', gtPath)
     print ('Output directory is ', outputDirectory)
-    print('input image name :',imageName)
-    print('input gt name :',gtName)
+    #cut img input in imagette (-patchdim-*-patchdim-) centered around barycentre of connected component
+    #posEx,posLab=cutPositiveExample(imgPath,gtPath)
+    cutNegativeExample(imgPath,gtPath)
+    #########################################################################################################
+    #                     DISTRIBUTE DATA IN TRAIN AND VALID DIRECTORY                                      #
+    #########################################################################################################
+    '''#extract image name to write file
+    imageName=os.path.splitext(os.path.basename(imgPath))[0]
+    #extract gt name to write file
+    gtName=os.path.splitext(os.path.basename(gtPath))[0]
+    #list of exemple and label need to have same size
+    assert(len(posEx)==len(posLab))
+    #compute how many example+label need to be distribute in training directory
+    tresholdRes=round((len(posEx)/100) * ratio)
+    print(str(ratio)+" % = "+str(tresholdRes)+" imagettes in training directory")
+    #distribute positive label
+    for i in range(len(posEx)):
+        if i<=tresholdRes :
+            cv2.imwrite(outputDirectory+trainInputPath+imageName+"_"+str(i)+".jpg", posEx[i])
+            cv2.imwrite(outputDirectory+trainOutputPath+gtName+"_"+str(i)+".jpg", posLab[i])
+        else :
+            cv2.imwrite(outputDirectory+validInputPath+imageName+"_"+str(i)+".jpg", posEx[i])
+            cv2.imwrite(outputDirectory+validOutputPath+gtName+"_"+str(i)+".jpg",  posLab[i])'''
+
+def cutNegativeExample(imgPath,gtPath):
+    #list of negative exemple
+    negativeExample = []
+    #list of negative label
+    negativelabel = []
     #relief image
-    image=cv2.imread(inputImage)
+    image=cv2.imread(imgPath,0)
     #groundtruth image
-    gt = cv2.imread(inputGT,0)
+    gt = cv2.imread(gtPath,0)
+    #size gt and exemple
+    h,w = gt.shape
+    #extends gt and exemple (like a cylinder)
+    gt_letfPart=gt[0:h,0:round(w/2)]
+    gt_rightPart=gt[0:h,round(w/2):w]
+    gt_extend = cv2.hconcat([gt_rightPart,gt,gt_letfPart])
+    h_ext,w_ext=gt_extend.shape
+    for i in range(patchdim,h_ext-patchdim):
+        for j in range(patchdim,w_ext-patchdim):
+            negEx=gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+            if(255 in negEx):
+                continue
+            else:
+                gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]=255
+                cv2.imshow('image',gt_extend)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+    #gt_extend[170-(patchdim//2):170+(patchdim//2),170-(patchdim//2):170+(patchdim//2)]=255
+
+
+def cutPositiveExample(imgPath,gtPath):
+    #list of positive exemple
+    positiveExample = []
+    #list of positive label
+    positivelabel = []
+    #relief image
+    image=cv2.imread(imgPath,0)
+    #groundtruth image
+    gt = cv2.imread(gtPath,0)
     #find center of connected component
     centroids=find_connected_component(gt)
-
-    #print("WRITE TO : ",outputDirectory+trainInputPath+imageName+"_test"+".jpg")
     for i in range(1,len(centroids)):
         print("nb imagettes : "+str(len(centroids)))
-        tresholdRes=round((len(centroids)/100) * ratio)
-        print(str(ratio)+" % = "+str(tresholdRes)+" imagettes")
         #find top left corner of mini image
         tlc=getTopLeftCorner_Patch(gt,centroids[i])
         #create mini image
         mini_gt=gt[tlc[1]:tlc[1]+patchdim,tlc[0]:tlc[0]+patchdim]
         mini_img=image[tlc[1]:tlc[1]+patchdim,tlc[0]:tlc[0]+patchdim]
-
-        if i<=tresholdRes :
-
-            cv2.imwrite(outputDirectory+trainInputPath+imageName+"_"+str(i)+".jpg", mini_img)
-            cv2.imwrite(outputDirectory+trainOutputPath+gtName+"_"+str(i)+".jpg", mini_gt)
-
-            #cv2.imwrite("./reptest/"+imageName+"_"+str(i)+'.jpg', mini_img)
-            #cv2.imwrite("./reptest/"+gtName+"_"+str(i)+".jpg", mini_gt)
-        else :
-            cv2.imwrite(outputDirectory+validInputPath+imageName+"_"+str(i)+".jpg", mini_img)
-            cv2.imwrite(outputDirectory+validOutputPath+gtName+"_"+str(i)+".jpg", mini_gt)
-
-
+        positiveExample.append(mini_img)
+        positivelabel.append(mini_gt)
+    return positiveExample,positivelabel
 
 def getTopLeftCorner_Patch(dtimg,centre):
     ct=0
@@ -152,8 +193,6 @@ def getTopLeftCorner_Patch(dtimg,centre):
     print("topleftcorner after :"+str(corner_output))
     print("count : "+str(ct))
     return corner_output
-
-
 def find_connected_component(gt):
     # need to choose 4 or 8 for connectivity type
     connectivity = 8
