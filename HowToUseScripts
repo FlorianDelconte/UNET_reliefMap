@@ -19,3 +19,13 @@ Condition1	: prediction model directory and groundtruth model directory need to 
 
 
 RUN : ./all_measure.sh PathToModelpred/ PathToGrounTruth/ DirectoryPathToWriteData/
+
+
+#################################################################################
+# 				all_measure.sh					#
+#		To Precision,Recall,FPR,F1 on prediction model			#
+#			with all treshold value [0;255]				#
+#		and write mean on this measure into Roc file			#
+#################################################################################
+Condition1	: 
+

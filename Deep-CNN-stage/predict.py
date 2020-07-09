@@ -21,23 +21,26 @@ from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from tensorflow.keras import backend as keras
 from PIL import Image
-
+from matplotlib import pyplot as plt
 import tensorflow as tf
 
 import model
 import cv2
 
+save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9')
+modelname       ="D9_E25"
+fullname        = "".join([save_dir, '/'])+modelname+".hdf5"
 
 net = model.unet()
-net.load_weights(model.fullname)
+net.load_weights(fullname)
 
 
 if len(sys.argv) == 3:
 	dir_input= sys.argv[1]
 	dir_output=sys.argv[2]
 else:
-	dir_input 	= model.test_dir_input
-	dir_output 	= model.test_dir_output
+	dir_input 	=	os.path.join(os.getcwd(),'..','repartitionData9','test', 'inputcut')
+	dir_output 	=  	os.path.join(os.getcwd(),'..','repartitionData9','test', 'outputcut')
 
 
 #for i in range(20):
@@ -56,7 +59,7 @@ for path in os.listdir(dir_input):
 		wToPredict = model.numFilt * round(img.shape[1] / model.numFilt)
 		img = cv2.resize(img, (wToPredict,hToPredict), interpolation =cv2.INTER_AREA)
 		print(hToPredict,wToPredict)
-
+	print("max : ",np.max(img),"min : ", np.min(img))
 	img = img / 255
 	img = np.reshape(img,img.shape+(1,))
 	img = np.reshape(img,(1,)+img.shape)

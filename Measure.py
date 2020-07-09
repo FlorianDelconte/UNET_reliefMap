@@ -61,7 +61,7 @@ def main(argv):
     f.close()
 
 def F1_Measure(TP,TN,FN,FP):
-    
+
     precision=float(TP)/(TP+FP)
 
     recall=float(TP)/(TP+FN)

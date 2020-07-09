@@ -21,7 +21,7 @@ printf "tresh_value,Precision,Recall,FPR\n" >> $pathOutputFileROC
 for i in {-1..255}
 do
   echo "___TRESHOLD___" $i
-  for reliefMap in $pathToModelSgm*.jpg
+  for reliefMap in $pathToModelSgm*.png
   do
     python3 treshold_predic.py -i $reliefMap -o $pathToWriteTreshold -t $i
     echo "python3 treshold_predic.py -i" $reliefMap "-o" $pathToWriteTreshold "-t" $i
@@ -30,7 +30,7 @@ do
   echo "___MEASURES___"
   printf "#%d\n" "$i" >> $pathOutputFileMeasure$i
   printf "Name,Precision,Recall,FPR,F1\n" >> $pathOutputFileMeasure$i
-  for tresholdMap in $pathToWriteTreshold*.jpg
+  for tresholdMap in $pathToWriteTreshold*.png
   do
     #CARE : GT file need to have "_GT.png" suffixe
     tresholdMapName=$(basename $tresholdMap)

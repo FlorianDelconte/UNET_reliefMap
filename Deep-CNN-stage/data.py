@@ -20,7 +20,7 @@ def trainset_generator(batch_size,
                        mask_save_prefix = "mask",
                        flag_multi_class = False,
                        num_class = 2,
-                       save_to_dir = "../crossValidationv3/data4_2nd/visu_augmented_data",
+                       save_to_dir =None,
                        target_size = (model.height, model.width),
                        seed = 1):
     '''

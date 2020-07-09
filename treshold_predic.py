@@ -34,7 +34,7 @@ def main(argv):
     imageName=os.path.splitext(os.path.basename(inputImage))[0]
     img=cv2.imread(inputImage,0)
     ret,thresh = cv2.threshold(img,tresh_value,255,cv2.THRESH_BINARY)
-    cv2.imwrite(outputDirectory+imageName+".jpg", thresh)
+    cv2.imwrite(outputDirectory+imageName+".png", thresh)
     #uncomment to test different treshold type
     #displayTresholdImage(img)
 

@@ -15,9 +15,10 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from tensorflow.keras import backend as keras
 from tensorflow.keras.utils import to_categorical
 from random_eraser import get_random_eraser  # added
+from matplotlib import pyplot as plt
 import model
 import data
-
+import math
 # Parameters Input
 numChannels = model.channels
 height  = model.height
@@ -26,86 +27,31 @@ batch_size = model.batch_size
 epochs = model.epochs
 
 # Folders Train, Valid, Test and Save
-train_dir 	= os.path.join(os.getcwd(), '..','crossValidationv3','data4_2nd', model.train_folder)
-valid_dir   = os.path.join(os.getcwd(), '..','crossValidationv3','data4_2nd', model.valid_folder)
+train_dir 	= os.path.join(os.getcwd(), '..','repartitionData9', 'train')
+valid_dir   = os.path.join(os.getcwd(), '..','repartitionData9', 'valid')
 
-
+save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9')
+modelname       ="D9_E100_B16-6"
+fullname        = "".join([save_dir, '/'])+modelname+".hdf5"
 
 input_folder    = 'input'
 label_folder    = 'output'
-'''data_gen_args = dict(rescale = 1.0 / 255,
-                     rotation_range=0.2,
-                     width_shift_range=0.05,
-                     height_shift_range=0.05,
-                     shear_range=0.05,
-                     zoom_range=0.05,
-                     horizontal_flip=True,
-                     fill_mode='nearest')'''
 
+steps_per_epoch=(math.ceil((len([name for name in os.listdir(train_dir+"/input") if os.path.join(train_dir+"/input", name)]))/batch_size))*6
+validation_steps=(math.ceil((len([name for name in os.listdir(valid_dir+"/input") if os.path.join(valid_dir+"/input", name)]))/batch_size))*6
+
+#Augmentated Data Operation
 data_gen_args = dict(rescale = 1.0 / 255,
                      rotation_range=20,
                      width_shift_range=0.2,
                      height_shift_range=0.2,
-                     zoom_range=0.15,
+                     zoom_range=0.3,
                      horizontal_flip=True,
                      vertical_flip=True,
                      fill_mode='reflect',
                      preprocessing_function=get_random_eraser(p=0.5, s_l=0.02, s_h=0.4, r_1=0.3, r_2=1/0.3,
                    v_l=0, v_h=0, pixel_level=False))
 
-#brightness_range=[0.1,1.],
-#shear_range=0.2,
-
-'''def loadDataset(directory, h=model.height, w=model.width, c=model.channels, n=model.numDatas):
-    #datas = np.zeros((h, w, c, n))
-
-    if os.path.isdir(directory):
-        mylist = os.listdir(directory)
-        if '.DS_Store' in mylist: mylist.remove('.DS_Store')
-
-        mylist = ["{}/{}".format(directory, file) for file in mylist]
-        imgs = io.imread_collection(mylist, plugin='matplotlib')
-        #[img.upper() for img in imgs]
-        imgs = np.array([img for img in imgs])
-        return imgs'''
-
-#        for (i, file) in enumerate(os.listdir(directory)):
-#           if file=='.DS_Store': continue
-#
-#           fullpath = "{}/{}".format(directory, file)
-#           #print fullpath
-#           if os.path.isdir(fullpath): continue
-#
-#           image = io.imread(fullpath, plugin='matplotlib')
-#           #image = io.imread_collection(os.listdir(directory))
-#           #image = transform.rescale(image, (h, w), mode='reflect', anti_aliasing=True, multichannel=True)
-#           #print image[1]
-#
-#           datas[:, :, :, i-1] = image
-
-#    return datas
-
-'''def loadTargets(directory, h=model.height, w=model.width, c=model.channels, n=model.numDatas):
-    #targets = np.zeros((n, 2))
-    if os.path.isdir(target_dir):
-
-        mylist = os.listdir(directory)
-        if '.DS_Store' in mylist: mylist.remove('.DS_Store')
-
-        mylist = ["{}/{}".format(directory, file) for file in mylist]''
-data4_2nd
-        # IF CSV
-        #for (i, file) in enumerate(mylist):
-        #    with open(file, 'r') as text:
-        #        line = csv.reader(text, delimiter=',')
-        #        for row in line:
-        #            targets[i, :] = np.array(row, dtype=np.int32)
-
-        # IF JPG
-        trgs = io.imread_collection(mylist, plugin='matplotlib')
-        trgs = np.array([t for t in trgs])
-        print(trgs)
-        return trgs'''
 
 # Create network
 __generators    = data.trainset_generator(model.batch_size, train_dir, input_folder, label_folder,
@@ -114,91 +60,35 @@ __generators    = data.trainset_generator(model.batch_size, train_dir, input_fol
 __validator     = data.trainset_generator(model.batch_size, valid_dir, input_folder, label_folder,
                                           data_gen_args, save_to_dir=None)#"../crossValidationv3/data4_1st/visu_augmented_data"
 
-model_checkpoint = ModelCheckpoint(model.fullname,
+model_checkpoint = ModelCheckpoint(fullname,
                                    monitor='val_loss',
                                    verbose=1,
                                    save_best_only=True)
 net = model.unet()
 net.summary()
 try:
-  net.load_weights(model.fullname)
+  net.load_weights(fullname)
 except IOError:
   pass
-'''net.fit_generator(__generators,
-                  steps_per_epoch   = model.steps_per_epoch,
-                  validation_data   = __validator,
-                  validation_steps  = model.validation_steps,
-                  epochs=model.epochs,
-                  callbacks=[model_checkpoint])'''
-net.fit(__generators,
-        steps_per_epoch   = model.steps_per_epoch,
+
+history=net.fit(__generators,
+        steps_per_epoch   = steps_per_epoch,
         validation_data   = __validator,
-        validation_steps  = model.validation_steps,
+        validation_steps  = validation_steps,
         epochs=model.epochs,
         callbacks=[model_checkpoint])
 
-#if not os.path.isdir(save_dir):
-#    os.makedirs(save_dir)
-#model_path = os.path.join(save_dir, model_name)
-#net.save(model_path)
-
-# Training network
-#for i in range(1, model.epochs+1):
-#    print("Epochs number : {}".format(i))
-#    subx = []
-#    suby = []
-#    #for (j, _) in enumerate(trains):
-#    #        xs = np.random.randint(540-512)
-#    #    ys = np.random.randint(720-512)
-#    #    samplex = trains[j, xs:xs+512, ys:ys+512, :]
-#    #    sampley = targets[j, xs:xs+512, ys:ys+512]
-#    #    subx.append(samplex)
-#    #        suby.append(sampley)
-#
-#    #    subx = np.array(subx)
-#    #suby = np.array(suby)
-#
-#    for (j, _) in enumerate(trains):
-#        samplex = trains[j, :, :]
-#        sampley = targets[j, :, :]
-#        sampley = sampley.astype(np.bool)
-#        sampley = sampley.astype(np.float32)
-#        #sampley = sampley.astype(np.int8)
-#
-#        subx.append(samplex)
-#        suby.append(sampley)
-#
-#    subx = np.array(subx)
-#    suby = np.array(suby)
-#
-#    x_train, x_test, y_train, y_test = train_test_split(subx, suby, test_size=0.3)
-#
-#    x_train = np.reshape(x_train, [34, 512, 512, 1])
-#    x_test  = np.reshape(x_test, [15, 512, 512, 1])
-#data5_5th
-#    y_train = np.reshape(y_train, [34, 512, 512, 1])
-##y_train = to_categorical(y_train)
-##   print y_train[1,:,:,1]
-#
-#    y_test  = np.reshape(y_test, [15, 512, 512, 1])
-#    #y_test = to_categorical(y_test, num_classes=1)
-#
-#    print("Start training")
-#    net.fit(x_train, y_train,data4_3rd
-#            verbose=1,
-#            batch_size=model.batch_size,
-#            epochs=1,
-#            validation_data=(x_test, y_test),
-#            shuffle=True)
-#
-#    # Save model and weights
-#    if not os.path.isdir(save_dir):
-#        os.makedirs(save_dir)
-#    model_path = os.path.join(save_dir, model_name)
-#    net.save(model_path)
-#
-#print('Saved trained model at %s ' % model_path)
-## Score trained model.
-#scores = net.evaluate(x_test, y_test, verbose=1)
-#print('Test loss:', scores[0])
-#print('Test accuracy:', scores[1])
+plt.plot(history.history['precision'],'b', label='precision')
+plt.plot(history.history['val_precision'],'b--',label = 'val_precision')
+plt.plot(history.history['recall'],'g', label='recall')
+plt.plot(history.history['val_recall'],'g--', label = 'val_recall')
+plt.plot(history.history['fbeta_score'],'r', label='f1')
+plt.plot(history.history['val_fbeta_score'],'r--', label = 'val_f1')
+plt.plot(history.history['loss'], 'k',label='loss')
+plt.plot(history.history['val_loss'],'k--', label = 'val_loss')
+plt.xlabel('Epoch')
+plt.ylabel('Measures')
+plt.ylim([0.0, 1])
+plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=4)
+plt.savefig("".join([save_dir, '/', modelname+'.png']))
+plt.clf()

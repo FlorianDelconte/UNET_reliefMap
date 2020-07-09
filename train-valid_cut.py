@@ -8,6 +8,9 @@ import sys, getopt
 import os
 import cv2
 import numpy as np
+import random
+#ratio of defect pixel in groundtruth to be acccepted like a negegative exemple
+ratio_neg=2
 #ratio for distribution in train dirs
 ratio=70
 #dimension of mini image
@@ -44,29 +47,56 @@ def main(argv):
     print ('Path to groundTruth is ', gtPath)
     print ('Output directory is ', outputDirectory)
     #cut img input in imagette (-patchdim-*-patchdim-) centered around barycentre of connected component
-    #posEx,posLab=cutPositiveExample(imgPath,gtPath)
-    cutNegativeExample(imgPath,gtPath)
+    posEx,posLab=cutPositiveExample(imgPath,gtPath)
+    c = list(zip(posEx, posLab))
+    random.shuffle(c)
+    posEx, posLab = zip(*c)
+    #inpaint to make negative exemple. No need to label for negative exepel (zeros matrix)
+    negEx=cutNegativeExample(imgPath,gtPath)
+    random.shuffle(negEx)
+    #print(len(negEx))
     #########################################################################################################
     #                     DISTRIBUTE DATA IN TRAIN AND VALID DIRECTORY                                      #
     #########################################################################################################
-    '''#extract image name to write file
+    #extract image name to write file
     imageName=os.path.splitext(os.path.basename(imgPath))[0]
     #extract gt name to write file
     gtName=os.path.splitext(os.path.basename(gtPath))[0]
     #list of exemple and label need to have same size
     assert(len(posEx)==len(posLab))
     #compute how many example+label need to be distribute in training directory
-    tresholdRes=round((len(posEx)/100) * ratio)
-    print(str(ratio)+" % = "+str(tresholdRes)+" imagettes in training directory")
-    #distribute positive label
+    tresholdResPos=round((len(posEx)/100) * ratio)
+    tresholdResNeg=round((len(negEx)/100) * ratio)
+    print(str(ratio)+" % = "+str(tresholdResPos)+" imagettes in training directory")
+    print(str(ratio)+" % = "+str(tresholdResNeg)+" imagettes in training directory")
+    countpos=0
+    countpos2=0
+    #distribute positive exemple
     for i in range(len(posEx)):
-        if i<=tresholdRes :
-            cv2.imwrite(outputDirectory+trainInputPath+imageName+"_"+str(i)+".jpg", posEx[i])
-            cv2.imwrite(outputDirectory+trainOutputPath+gtName+"_"+str(i)+".jpg", posLab[i])
+        if i<=tresholdResPos :
+            cv2.imwrite(outputDirectory+trainInputPath+imageName+"_"+str(i)+".png", posEx[i])
+            cv2.imwrite(outputDirectory+trainOutputPath+gtName+"_"+str(i)+".png", posLab[i])
+            countpos+=1
         else :
-            cv2.imwrite(outputDirectory+validInputPath+imageName+"_"+str(i)+".jpg", posEx[i])
-            cv2.imwrite(outputDirectory+validOutputPath+gtName+"_"+str(i)+".jpg",  posLab[i])'''
-
+            cv2.imwrite(outputDirectory+validInputPath+imageName+"_"+str(i)+".png", posEx[i])
+            cv2.imwrite(outputDirectory+validOutputPath+gtName+"_"+str(i)+".png",  posLab[i])
+            countpos2+=1
+    print("pos exemple in train : ",countpos )
+    print("pos exemple in valid : ",countpos2 )
+    #distribute negative exemple
+    count1=0
+    count2=0
+    for i in range(len(negEx)):
+        if i<=tresholdResNeg :
+            cv2.imwrite(outputDirectory+trainInputPath+imageName+"_"+str(i)+"NEG.jpg", negEx[i])
+            cv2.imwrite(outputDirectory+trainOutputPath+gtName+"_"+str(i)+"NEG.jpg", np.zeros((patchdim, patchdim),np.uint8))
+            count1+=1
+        else :
+            cv2.imwrite(outputDirectory+validInputPath+imageName+"_"+str(i)+"NEG.jpg", negEx[i])
+            cv2.imwrite(outputDirectory+validOutputPath+gtName+"_"+str(i)+"NEG.jpg", np.zeros((patchdim, patchdim),np.uint8))
+            count2+=1
+    print("neg exemple in train : ",count1 )
+    print("neg exemple in valid : ",count2 )
 def cutNegativeExample(imgPath,gtPath):
     #list of negative exemple
     negativeExample = []
@@ -78,23 +108,120 @@ def cutNegativeExample(imgPath,gtPath):
     gt = cv2.imread(gtPath,0)
     #size gt and exemple
     h,w = gt.shape
-    #extends gt and exemple (like a cylinder)
-    gt_letfPart=gt[0:h,0:round(w/2)]
-    gt_rightPart=gt[0:h,round(w/2):w]
-    gt_extend = cv2.hconcat([gt_rightPart,gt,gt_letfPart])
-    h_ext,w_ext=gt_extend.shape
-    for i in range(patchdim,h_ext-patchdim):
-        for j in range(patchdim,w_ext-patchdim):
-            negEx=gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
-            if(255 in negEx):
-                continue
-            else:
-                gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]=255
-                cv2.imshow('image',gt_extend)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-    #gt_extend[170-(patchdim//2):170+(patchdim//2),170-(patchdim//2):170+(patchdim//2)]=255
 
+    #extends gt and exemple (like a cylinder)
+    gt_letfPart=gt[0:h,0:round(w/4)]
+    gt_rightPart=gt[0:h,round(w/4):w]
+    image_letfPart=image[0:h,0:round(w/4)]
+    image_rightPart=image[0:h,round(w/4):w]
+    gt_extend = cv2.hconcat([gt_rightPart,gt,gt_letfPart])
+    image_extend = cv2.hconcat([image_rightPart,image,image_letfPart])
+    h_ext,w_ext=gt_extend.shape
+
+    #UNCOMMENT TO DISPLAY EXTENDS LABEL AND EXEMPLE
+    #cv2.imshow('image',image_extend)
+    #cv2.waitKey(0)
+    '''cv2.imshow('image',gt_extend)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()'''
+    counter1=0
+    counter2=0
+    for i in range(patchdim//2,h_ext-(patchdim//2),patchdim//2):
+        for j in range(patchdim//2,w_ext-(patchdim//2),patchdim//2):
+            print(gt_extend.shape)
+            print(i,j)
+            if gt_extend[i, j]!=255:
+                #extract imagette
+                negEx=gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                #compute raio of B/W
+                current_ratio_BW=np.count_nonzero(negEx)/(patchdim*patchdim)
+
+                #check ratio
+                if(current_ratio_BW<=(ratio_neg/100)):
+                    print(current_ratio_BW)
+                    #extract imagette
+                    currentNegLab=gt_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                    currentNegEx=image_extend[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                    kernel = np.ones((10,10),np.uint8)
+                    currentNegLab=cv2.dilate(currentNegLab,kernel,iterations = 1)
+                    texture=cv2.bitwise_and(cv2.bitwise_not(currentNegLab), currentNegEx)
+                    texture = cv2.inpaint(texture,currentNegLab,10,cv2.INPAINT_TELEA)
+                    negativeExample.append(texture)
+                    #UNCOMMENT TO DISPLAY PIPELINE ON LABEL + NEGATIVE FINAL EXEMPLE
+                    '''cv2.imshow('image',currentNegLab)
+                    cv2.waitKey(0)
+                    cv2.imshow('image',cv2.dilate(currentNegLab,kernel,iterations = 1))
+                    cv2.waitKey(0)
+                    cv2.imshow('image',texture)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()'''
+                    counter1+=1
+    print("image sur 1 : "+str(counter1))
+    #print("image sur 2 : "+str(counter2))
+    return negativeExample
+
+def cutPositiveExampleNoIntersection(imgPath,gtPath):
+    #list of negative exemple
+    negativeExample = []
+    #list of negative label
+    negativelabel = []
+    #relief image
+    image=cv2.imread(imgPath,0)
+    #groundtruth image
+    gt = cv2.imread(gtPath,0)
+    #size gt and exemple
+    h,w = gt.shape
+
+    #extends gt and exemple (like a cylinder)
+    '''gt_letfPart=gt[0:h,0:round(w/4)]
+    gt_rightPart=gt[0:h,round(w/4):w]
+    image_letfPart=image[0:h,0:round(w/4)]
+    image_rightPart=image[0:h,round(w/4):w]
+    gt_extend = cv2.hconcat([gt_rightPart,gt,gt_letfPart])
+    image_extend = cv2.hconcat([image_rightPart,image,image_letfPart])
+    h_ext,w_ext=gt_extend.shape'''
+
+    #UNCOMMENT TO DISPLAY EXTENDS LABEL AND EXEMPLE
+    #cv2.imshow('image',image_extend)
+    #cv2.waitKey(0)
+    '''cv2.imshow('image',gt_extend)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()'''
+    counter1=0
+    counter2=0
+    for i in range(patchdim//2,h_ext-(patchdim//2),patchdim//2):
+        for j in range(patchdim//2,w_ext-(patchdim//2),patchdim//2):
+            print(gt.shape)
+            print(i,j)
+            if gt[i, j]!=255:
+                #extract imagette
+                negEx=gt[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                #compute raio of B/W
+                current_ratio_BW=np.count_nonzero(negEx)/(patchdim*patchdim)
+
+                #check ratio
+                if(current_ratio_BW<=(ratio_neg/100)):
+                    print(current_ratio_BW)
+                    #extract imagette
+                    currentNegLab=gt[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                    currentNegEx=image[i-(patchdim//2):i+(patchdim//2),j-(patchdim//2):j+(patchdim//2)]
+                    kernel = np.ones((10,10),np.uint8)
+                    currentNegLab=cv2.dilate(currentNegLab,kernel,iterations = 1)
+                    texture=cv2.bitwise_and(cv2.bitwise_not(currentNegLab), currentNegEx)
+                    texture = cv2.inpaint(texture,currentNegLab,10,cv2.INPAINT_TELEA)
+                    negativeExample.append(texture)
+                    #UNCOMMENT TO DISPLAY PIPELINE ON LABEL + NEGATIVE FINAL EXEMPLE
+                    '''cv2.imshow('image',currentNegLab)
+                    cv2.waitKey(0)
+                    cv2.imshow('image',cv2.dilate(currentNegLab,kernel,iterations = 1))
+                    cv2.waitKey(0)
+                    cv2.imshow('image',texture)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()'''
+                    counter1+=1
+    print("image sur 1 : "+str(counter1))
+    #print("image sur 2 : "+str(counter2))
+    return negativeExample
 
 def cutPositiveExample(imgPath,gtPath):
     #list of positive exemple

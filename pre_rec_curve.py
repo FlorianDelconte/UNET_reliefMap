@@ -36,34 +36,58 @@ def main(argv):
     Precision_value4=[]
     Recall_values4=[]
 
-    with open("repartition1/test/roc_curve/ROC", 'r') as csvfile:
+    Precision_value5=[]
+    Recall_values5=[]
+
+    Precision_value6=[]
+    Recall_values6=[]
+
+    with open("crossValidationv6/roc_curve/ROCk1", 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             Precision_value1.append(float(row['Precision']))
             Recall_values1.append(float(row['Recall']))
 
-    with open("repartition3/test/roc_curve/ROC", 'r') as csvfile:
+    with open("crossValidationv6/roc_curve/ROCk2", 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             Precision_value3.append(float(row['Precision']))
             Recall_values3.append(float(row['Recall']))
 
-    with open("repartition4/test/roc_curve/ROC", 'r') as csvfile:
+    with open("crossValidationv6/roc_curve/ROCk3", 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             Precision_value4.append(float(row['Precision']))
             Recall_values4.append(float(row['Recall']))
 
+    with open("crossValidationv6/roc_curve/ROCk4", 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            Precision_value5.append(float(row['Precision']))
+            Recall_values5.append(float(row['Recall']))
+
+    with open("crossValidationv6/roc_curve/ROCk5", 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            Precision_value6.append(float(row['Precision']))
+            Recall_values6.append(float(row['Recall']))
 
 
-    plt.plot(Recall_values1, Precision_value1, label='Logistic')
-    plt.plot(Recall_values1, Precision_value1, 'ro',label='Logistic')
 
-    plt.plot(Recall_values3, Precision_value3, label='Logistic')
-    plt.plot(Recall_values3, Precision_value3, 'bo',label='Logistic')
+    plt.plot(Recall_values1, Precision_value1, label='k1')
+    plt.plot(Recall_values1, Precision_value1, 'ro',label='k1')
 
-    plt.plot(Recall_values4, Precision_value4, label='Logistic')
-    plt.plot(Recall_values4, Precision_value4, 'yo',label='Logistic')
+    plt.plot(Recall_values3, Precision_value3, label='k2')
+    plt.plot(Recall_values3, Precision_value3, 'bo',label='k2')
+
+    plt.plot(Recall_values4, Precision_value4, label='k3')
+    plt.plot(Recall_values4, Precision_value4, 'go',label='k3')
+
+    plt.plot(Recall_values5, Precision_value5, label='k4')
+    plt.plot(Recall_values5, Precision_value5, 'mo',label='k4')
+
+    plt.plot(Recall_values6, Precision_value6, label='k5')
+    plt.plot(Recall_values6, Precision_value6, 'yo',label='k5')
     # axis labels
     plt.xlabel('Recall')
     plt.ylabel('Precision')
