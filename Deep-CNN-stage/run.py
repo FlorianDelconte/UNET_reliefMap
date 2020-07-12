@@ -30,15 +30,15 @@ epochs = model.epochs
 train_dir 	= os.path.join(os.getcwd(), '..','repartitionData9', 'train')
 valid_dir   = os.path.join(os.getcwd(), '..','repartitionData9', 'valid')
 
-save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9')
-modelname       ="D9_E100_B16-6"
+save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9','TEST_article')
+modelname       ="leakyReLu-v4-E34"
 fullname        = "".join([save_dir, '/'])+modelname+".hdf5"
 
 input_folder    = 'input'
 label_folder    = 'output'
 
-steps_per_epoch=(math.ceil((len([name for name in os.listdir(train_dir+"/input") if os.path.join(train_dir+"/input", name)]))/batch_size))*6
-validation_steps=(math.ceil((len([name for name in os.listdir(valid_dir+"/input") if os.path.join(valid_dir+"/input", name)]))/batch_size))*6
+steps_per_epoch=(math.ceil((len([name for name in os.listdir(train_dir+"/input") if os.path.join(train_dir+"/input", name)]))/batch_size))*3
+validation_steps=(math.ceil((len([name for name in os.listdir(valid_dir+"/input") if os.path.join(valid_dir+"/input", name)]))/batch_size))*3
 
 #Augmentated Data Operation
 data_gen_args = dict(rescale = 1.0 / 255,

@@ -27,8 +27,8 @@ import tensorflow as tf
 import model
 import cv2
 
-save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9')
-modelname       ="D9_E25"
+save_dir        = os.path.join(os.getcwd(),'model', 'save','repartition-data9','TEST_article')
+modelname       ="leakyReLu-v4-E34"
 fullname        = "".join([save_dir, '/'])+modelname+".hdf5"
 
 net = model.unet()
@@ -39,8 +39,8 @@ if len(sys.argv) == 3:
 	dir_input= sys.argv[1]
 	dir_output=sys.argv[2]
 else:
-	dir_input 	=	os.path.join(os.getcwd(),'..','repartitionData9','test', 'inputcut')
-	dir_output 	=  	os.path.join(os.getcwd(),'..','repartitionData9','test', 'outputcut')
+	dir_input 	=	os.path.join(os.getcwd(),'..','repartitionData9','test', 'input')
+	dir_output 	=  	os.path.join(os.getcwd(),'..','repartitionData9','test', 'output')
 
 
 #for i in range(20):
